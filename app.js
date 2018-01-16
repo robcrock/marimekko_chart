@@ -68,7 +68,8 @@ d3.csv('household_income.csv', function(error, data) {
   const marimekkoChartHeight = height / stateScaleG.domain().length;
 
   yScale
-    .domain([0, 1])
+    // .domain([0, 1])
+    .domain([0, d3.max(households_2016, d => d.percent_of_total)])
     .range([marimekkoChartHeight, 0]);
 
   // area.y0(yScale(0));
@@ -87,15 +88,16 @@ d3.csv('household_income.csv', function(error, data) {
     .enter().append('g')
       .attr('class', function (d) { return 'state state--' + d.key; })
       .attr('transform', function (d) {
-        let ty = statePositionG(d) - stateScaleG.bandwidth();
+        let ty = statePositionG(d) - stateScaleG.bandwidth() + marimekkoChartHeight/2; // <- Adjust relative position of each chart here
         return 'translate(0,' + ty + ')';
     });
 
 
   dataFlat.forEach(function (state) {
+    let accumulator = 0;
     state.values.forEach(function(d) {
-      d.offset = xScale(d.bar_width);
-      // console.log(d);
+      d.offset = accumulator;
+      accumulator += d.bar_width
     })
   });
 
@@ -110,10 +112,12 @@ d3.csv('household_income.csv', function(error, data) {
     .data(d => d.values)
     .enter().append("rect")
     .attr("class", "bar")
-    .attr("x", (d, i) => xScale(i * 2.5))
+    // .attr("x", (d, i) => xScale(i * 2.5))
+    .attr("x", (d, i) => xScale(d.offset))
     .attr("width", d => xScale(d.bar_width))
+    .attr("height", d => yScale(0) - yScale(d.percent_of_total))
     .attr("y", d => yScale(d.percent_of_total))
-    .attr("height", d => yScale(d.percent_of_total))
+    .style("fill", '#ccc');
 
   // console.log(dataFlat.values);
 
@@ -125,7 +129,7 @@ d3.csv('household_income.csv', function(error, data) {
   //   .data(d => d.values).enter()
   //   .append('rect')
   //     .attr('class', 'bar')
-    
+
     // .attr('x', x)
     // .attr('y', y)
     // .attr("height", d => yScale(d.percent_of_total))
