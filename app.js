@@ -74,6 +74,10 @@ d3.csv('household_income.csv', function(error, data) {
     .key(function (d) { return d.state; })
     .entries(households_2016);
 
+  dataFlat.sort(function (a, b) {
+    return b.values[0].percent_of_total - a.values[0].percent_of_total;
+  });
+
   xScale
     .domain([0, 44]);
 
@@ -93,14 +97,6 @@ d3.csv('household_income.csv', function(error, data) {
 
   svg.append('g').attr('class', 'axis axis--state')
     .call(stateAxisG);
-
-  dataFlat.forEach(function (d) {
-
-    d.values.sort(function (a, b) {
-      return a.percent_of_total - b.percent_of_total;
-    });
-
-  })
 
   const gState = svg
     .append('g')
@@ -160,15 +156,15 @@ d3.csv('household_income.csv', function(error, data) {
   // })
 
   // log sorted states
-  dataFlat.forEach(function(d) {
+  // dataFlat.forEach(function(d) {
 
-    // console.log(d.values);
+  //   // console.log(d.values);
 
-    d.values.sort(function (a, b) {
-      return a.percent_of_income - b.percent_of_income;
-    });
+  //   d.values.sort(function (a, b) {
+  //     return a.percent_of_income - b.percent_of_income;
+  //   });
 
-  })
+  // })
 
   console.log(dataFlat);
 
