@@ -1,3 +1,5 @@
+// START ----- MARGIN CONVENTION
+
 const margin = { top: 30, right: 10, bottom: 30, left: 300 },
   width = 700 - margin.left - margin.right,
   height = 3000 - margin.top - margin.bottom;
@@ -9,32 +11,39 @@ const svg = d3.select('body')
   .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-const xScale = d3.scaleLinear().range([0, width]),
-  xValue = function (d) { return xScale(x(d)); },
-  xAxis = d3.axisBottom(xScale);
+// END ----- MARGIN CONVENTION
 
-// var y = function (d) { return d.percent_of_total; },
-const yScale = d3.scaleLinear();
+// START ----- COMPONENTS BEFORE DATA
 
-const state = function (d) { return d.key; },
-  stateScaleG = d3.scaleBand().range([0, height]),
-  statePositionG = function (d) { return stateScaleG(state(d)); },
-  stateAxisG = d3.axisLeft(stateScaleG);
+const xScale = d3.scaleLinear().range([0, width]); // scales data along xAxis
+const xAxis = d3.axisTop(xScale); // single scale along the top
+const yScalePerState = d3.scaleLinear(); // individual yScale for each state group
+const state = function (d) { return d.key; }; // return State name
+const stateBand = d3.scaleBand().range([0, height]); // evenly distributes states
+const statePosition = function (d) { return stateBand(state(d)); }; // positions states next to their group
+const stateLabel = d3.axisLeft(stateBand); // state labels each bank
+
+// END ----- COMPONENTS BEFORE DATA
+
+// START ----- DATA IMPORT
 
 d3.csv('household_income.csv', function(error, data) {
+
   if (error) throw error;
 
-  // Filter for only 2016 households
-  const households_2016 = data.filter(function(d) {
-    return d.year === '2016';
-  })
+// STATE ----- DATA PREP
 
-  // Clean up data types
-  households_2016.forEach(function(d) {
-    d.bar_width = +d.bar_width;
-    d.number_of_households = +d.number_of_households;
-    d.percent_of_total = +d.percent_of_total;
-    switch(d.income_level) {
+  const householdsIn2016 = data.filter(function (d) {
+    return d.year === '2016';
+  });
+
+  householdsIn2016.forEach(function(d) {
+
+    d.bar_width = +d.bar_width; // convert bar_width to a Number
+    d.number_of_households = +d.number_of_households; // convert households to a Number
+    d.percent_of_total = +d.percent_of_total; // convert percent_of_total to a Number
+
+    switch(d.income_level) { // assign an index to each income_level to use for sorting
       case 'Less than $10,000': d.income_index = 0
         break;
       case '$10,000 to $14,999': d.income_index = 1
@@ -67,215 +76,76 @@ d3.csv('household_income.csv', function(error, data) {
         break;
       case '$200,000 or more': d.income_index = 15
         break;
-    }
-  })
+    };
 
-  let dataFlat = d3.nest()
+  });
+
+  // nest values within each state
+  let nested = d3.nest()
     .key(function (d) { return d.state; })
-    .entries(households_2016);
+    .entries(householdsIn2016);
 
-  dataFlat.sort(function (a, b) {
+  // sort income_levels by the income_index
+  nested.forEach(function(state) {
+    state.values.sort(function(a, b) {
+      return a.income_index - b.income_index;
+    })
+  });
+
+  // sort states by the "less than $10,000" income_level by default
+  nested.sort(function (a, b) {
     return b.values[0].percent_of_total - a.values[0].percent_of_total;
   });
 
-  xScale
-    .domain([0, 44]);
-
-  stateScaleG
-    .domain(dataFlat.map(function (d) { return d.key; }));
-
-  const marimekkoChartHeight = height / stateScaleG.domain().length;
-
-  yScale
-    // .domain([0, 1])
-    .domain([0, d3.max(households_2016, d => d.percent_of_total)])
-    .range([marimekkoChartHeight, 0]);
-
-  svg.append('g').attr('class', 'axis axis--x')
-    .attr('transform', 'translate(0,' + height + ')')
-    .call(xAxis);
-
-  svg.append('g').attr('class', 'axis axis--state')
-    .call(stateAxisG);
-
-  const gState = svg
-    .append('g')
-      .attr('class', 'states')
-    .selectAll('.state').data(dataFlat)
-    .enter().append('g')
-      .attr('class', function (d) { return 'state state--' + d.key; })
-      .attr('transform', function (d) {
-        let ty = statePositionG(d) - stateScaleG.bandwidth() + marimekkoChartHeight/2; // <- Adjust relative position of each chart here
-        return 'translate(0,' + ty + ')';
-    });
-
-
-  dataFlat.forEach(function (state) {
+  nested.forEach(function (state) {
     let accumulator = 0;
-    state.values.forEach(function(d) {
+    state.values.forEach(function (d) {
       d.offset = accumulator;
       accumulator += d.bar_width
     })
   });
 
-  gState.selectAll('.bar')
-    .data(d => d.values)
-    .enter().append("rect")
-    .attr("class", "bar")
-    // .attr("x", (d, i) => xScale(i * 2.5))
-    .attr("x", (d, i) => xScale(d.offset))
-    .attr("width", d => xScale(d.bar_width))
-    .attr("height", d => yScale(0) - yScale(d.percent_of_total))
-    .attr("y", d => yScale(d.percent_of_total))
-    .style("fill", '#ccc');
+// END ----- DATA PREP
 
-  //////////////////// HANDY FUNCTIONS ////////////////////
+// START ----- INCORPORATE DATA INTO COMPONENTS
 
-  // Sorts stat by income_level
-  function sortStatesBySelectedIncome(data, selectedIncome) {
-    let statesAtLevel = [];
+  stateBand.domain(nested.map(function (d) { return d.key; }));
 
-    // statesAtLevel = data.filter(function(d) {
-    //   return d.income_level === selectedIncome;
-    // })
+  xScale.domain([0, stateBand.domain().length]);
 
-    statesAtLevel.push(data.sort(function (a, b) { return b.percent_of_total - a.percent_of_total; }));
+  const marimekkoChartHeight = height / stateBand.domain().length;
 
-    return statesAtLevel;
-  }
+  yScalePerState
+    .domain([0, d3.max(householdsIn2016, d => d.percent_of_total)])
+    .range([marimekkoChartHeight, 0]);
 
-  // *** Don't forget about this cool trick Sort states by peak income level
-  // EXPERIMENT WITH SORTING FUNCTIONS
-  
-  // log whole data set
-  // console.log(dataFlat);
+// END ----- INCORPORATE DATA INTO COMPONENTS
 
-  // log only states
-  // dataFlat.forEach(function(d) {
-  //   console.log(d.key);
-  // })
+// START ----- ADD ELEMENTS TO THE SCREEN
 
-  // log sorted states
-  // dataFlat.forEach(function(d) {
+  svg.append('g')
+    .attr('transform', 'translate(0,' + height + ')')
+    .call(xAxis);
 
-  //   // console.log(d.values);
+  svg.append('g')
+    .call(stateLabel);
 
-  //   d.values.sort(function (a, b) {
-  //     return a.percent_of_income - b.percent_of_income;
-  //   });
+  const gState = svg.append('g')
+    .selectAll('g').data(nested)
+    .enter()
+    .append('g').attr('transform', function (d) {
+        let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight/2;
+        return 'translate(0,' + ty + ')';
+    });
+    
+    gState
+      .selectAll('.bar').data(d => d.values)
+      .enter().append("rect")
+        .attr("x", (d, i) => xScale(d.offset))
+        .attr("y", d => yScalePerState(d.percent_of_total))
+        .attr("width", d => xScale(d.bar_width))
+        .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
+        .style("fill", '#ccc');
+});
 
-  // })
-
-  console.log(dataFlat);
-
-  // dataFlat.forEach(function (d) {
-  //   sortStatesBySelectedIncome(d.values, '$200,000 or more')
-  // });
-
-  // dataFlat.sort(function (a, b) { return a.time - b.time; });
-
-  // dataFlat.forEach(function (d) {
-  //   d.values.sort(function (a, b) {
-  //     return a.income_index - b.income_index;
-  //   })
-  // });
-
-  // d3.scan(dataFlat[0].values, function (a, b) {
-  //   return b.percent_of_total - a.percent_of_total;
-  // })
-
-  // function peakIncomeLevel(d) {
-  //   let i = d3.scan(d.values, function (a, b) { return y(b.percent_of_total) - y(a.percent_of_total); });
-  //   return d.values[i];
-  // };
-
-  // TEST RUNS OF HANDY FUNCTIONS
-  // console.log(sortStatesBySelectedIncome(households_2016, '$10,000 to $14,999'));
-  // console.log(computeOffset(households_2016, 'Alabama'));
-
-})
-
-//////////////////// THE CODE BELOW MAKES A SINGLE MARIMEKKO ////////////////////
-////////////////////////////////////////////////////////////////////////////////.
-
-// // START - D3 margin convention
-// const width = 500,
-//   height = 270,
-//   margin = { top: 25, right: 50, bottom: 50, left: 50 };
-
-// const svg = d3.select("body").append("svg")
-//     .attr("width", width)
-//     .attr("height", height)
-//     .style('border', '1px solid #000')
-//   .append("g")
-//     .attr("transform", `translate( ${margin.left}, ${margin.top} )`);
-// // END - D3 margin convention
-
-// // START - chart helpers
-// let totalOffset = 0;
-
-// const xScale = d3.scaleLinear()
-//     .range([0, width - margin.left - margin.right]),
-//   yScale = d3.scaleLinear()
-//     .range([height - margin.top - margin.bottom, 0]);
-
-// const p = d3.format(".0%");
-// // END - chart helpers
-
-// // START - Data driven designs
-// d3.json("marimekko.json", function (error, data) {
-
-//   if (error) throw error;
-
-//   // Compute the bar offset
-//   totalOffset = data.reduce(function (v, p) {
-//     return (p.offset = v) + p.barWidth;
-//   }, 0);
-
-//   xScale.domain([0, totalOffset])
-
-//   console.log(xScale(10));
-
-//   yScale.domain([0, d3.max(data, d => d.percent_of_total)])
-
-//   // Add a group for each segment.
-//   var states = svg.selectAll("rect")
-//     .data(data)
-//     .enter().append("rect")
-//     .attr('x', d => xScale(d.offset))
-//     .attr("y", d => yScale(d.percent_of_total))
-//     .attr("height", d => height - margin.top - margin.bottom - yScale(d.percent_of_total))
-//     .attr("width", function (d) { return xScale(d.barWidth); })
-//     .style("fill", '#ccc');
-
-/* TEXT LABELS
-
-  // // Add x-axis ticks.
-  // var xtick = svg.selectAll(".x")
-  //   .data(xScale.ticks(10))
-  //   .enter().append("g")
-  //   .attr("class", "x")
-  //   .attr("transform", d => `translate( ${xScale(d)} , ${height - margin.top - margin.bottom} )`);
-
-  // xtick.append("text")
-  //   .attr("y", 5)
-  //   .attr("text-anchor", "middle")
-  //   .attr("dy", ".71em")
-  //   .text(p);
-
-  // // Add y-axis ticks.
-  // const ytick = svg.selectAll(".y")
-  //   .data(yScale.ticks(10))
-  //   .enter().append("g")
-  //   .attr("class", "y")
-  //   .attr("transform", d => `translate( 0, ${yScale(d)})`);
-
-  // ytick.append("text")
-  //   .attr("x", -8)
-  //   .attr("text-anchor", "end")
-  //   .attr("dy", ".35em")
-  //   .text(p);
-
-*/
-
-// });
+// END ----- DATA IMPORT
