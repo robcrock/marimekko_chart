@@ -1,0 +1,13 @@
+.d3-tip {
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.8);
+  color: rgb(31, 29, 29);
+  font-size: 12px;
+}
+
+/* Style northward tooltips specifically */
+.d3-tip.n:after {
+  margin: -2px 0 0 0;
+  top: 100%;
+  left: 0;
+}

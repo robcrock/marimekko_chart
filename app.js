@@ -15,6 +15,75 @@ const svg = d3.select('body')
 
 // START ----- COMPONENTS BEFORE DATA
 
+const customLevels = [
+  {
+    label: 'less than $10,000',
+    offset: 0
+  },
+  {
+    label: '$10,000 to $14,999',
+    offset: 0
+  },
+  {
+    label: '$15,000 to $19,999',
+    offset: 0
+  },
+  {
+    label: '$20,000 to $24,999',
+    offset: 0
+  },
+  {
+    label: '$25,000 to $29,999',
+    offset: 0
+  },
+  {
+    label: '$30,000 to $34,999',
+    offset: 0
+  },
+  {
+    label: '$35,000 to $39,999',
+    offset: 0
+  },
+  {
+    label: '$40,000 to $44,999',
+    offset: 0
+  },
+  {
+    label: '$45,000 to $49,999',
+    offset: 0
+  },
+  {
+    label: '$50,000 to $59,999',
+    offset: 0
+  },
+  {
+    label: '$60,000 to $74,999',
+    offset: 0
+  },
+  {
+    label: '$75,000 to $99,999',
+    offset: 0
+  },
+  {
+    label: '$100,000 to $124,999',
+    offset: 0
+  },
+  {
+    label: '$125,000 to $149,999',
+    offset: 0
+  },
+  {
+    label: '$150,000 to $199,999',
+    offset: 0
+  },
+  {
+    label: '$200,000 or more',
+    offset: 0
+  }
+]
+
+const customScale = d3.scaleLinear().range([0, width]);
+const customAxis = d3.axisTop(customScale).ticks(16); // single scale along the top
 const xScale = d3.scaleLinear().range([0, width]); // scales data along xAxis
 const xAxis = d3.axisTop(xScale); // single scale along the top
 const yScalePerState = d3.scaleLinear(); // individual yScale for each state group
@@ -34,7 +103,9 @@ d3.csv('household_income.csv', function(error, data) {
 // STATE ----- DATA PREP
 
   const householdsIn2016 = data.filter(function (d) {
-    return d.year === '2016';
+    return d.year === '2016' &&
+      d.state != 'Puerto Rico' &&
+      d.state != 'District of Columbia';
   });
 
   householdsIn2016.forEach(function(d) {
@@ -97,6 +168,7 @@ d3.csv('household_income.csv', function(error, data) {
     return b.values[0].percent_of_total - a.values[0].percent_of_total;
   });
 
+  // create a custom offset to position each rect
   nested.forEach(function (state) {
     let accumulator = 0;
     state.values.forEach(function (d) {
@@ -105,13 +177,24 @@ d3.csv('household_income.csv', function(error, data) {
     })
   });
 
+  // set the offect for circles
+  customLevels.forEach(function(d, i) {
+    if ( i !== 15) {
+      d.offset = nested[0].values[i].offset + (nested[0].values[i + 1].offset - nested[0].values[i].offset) / 2;
+    } else {
+      d.offset = nested[0].values[i].offset + (44 - nested[0].values[i].offset) / 2;
+    }
+  })
+
 // END ----- DATA PREP
 
 // START ----- INCORPORATE DATA INTO COMPONENTS
 
+  customScale.domain([0, 44]); //d3.max(customLevels, d => d.offset)]);
+
   stateBand.domain(nested.map(function (d) { return d.key; }));
 
-  xScale.domain([0, stateBand.domain().length]);
+  xScale.domain([0, 44]);
 
   const marimekkoChartHeight = height / stateBand.domain().length;
 
@@ -123,9 +206,22 @@ d3.csv('household_income.csv', function(error, data) {
 
 // START ----- ADD ELEMENTS TO THE SCREEN
 
-  svg.append('g')
-    .attr('transform', 'translate(0,' + height + ')')
-    .call(xAxis);
+  var tool_tip = d3.tip()
+    .attr("class", "d3-tip")
+    .offset([-5, 0])
+    .html(d => d.label);
+  svg.call(tool_tip);
+
+  svg.selectAll('.circle')
+    .data(customLevels).enter()
+    .append('circle')
+      .attr('class', 'circle')
+      .attr('cx', d => customScale(d.offset))
+      .attr('cy', 0)
+      .attr('r', 5)
+      .style('fill', '#ccc')
+      .on('mouseover', tool_tip.show)
+      .on('mouseout', tool_tip.hide);
 
   svg.append('g')
     .call(stateLabel);
@@ -134,7 +230,7 @@ d3.csv('household_income.csv', function(error, data) {
     .selectAll('g').data(nested)
     .enter()
     .append('g').attr('transform', function (d) {
-        let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight/2;
+        let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight/2 + margin.top;
         return 'translate(0,' + ty + ')';
     });
     
@@ -148,4 +244,4 @@ d3.csv('household_income.csv', function(error, data) {
         .style("fill", '#ccc');
 });
 
-// END ----- DATA IMPORT
+// END ----- DATA IMPORT\
