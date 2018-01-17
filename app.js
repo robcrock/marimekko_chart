@@ -217,14 +217,11 @@ d3.csv('household_income.csv', function(error, data) {
     .append('circle')
       .attr('class', 'circle')
       .attr('cx', d => customScale(d.offset))
-      .attr('cy', 0)
+      .attr('cy', -10)
       .attr('r', 5)
       .style('fill', '#ccc')
       .on('mouseover', tool_tip.show)
       .on('mouseout', tool_tip.hide);
-
-  svg.append('g')
-    .call(stateLabel);
 
   const gState = svg.append('g')
     .selectAll('g').data(nested)
@@ -242,6 +239,16 @@ d3.csv('household_income.csv', function(error, data) {
         .attr("width", d => xScale(d.bar_width))
         .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
         .style("fill", '#ccc');
+
+  svg.append('g')
+    .call(stateLabel);
+
+  // Move text labels around
+  d3.selectAll('text')
+    .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
+    .attr('text-anchor', 'start')
+    .attr('font-family', 'Roboto')
+    .attr('font-size', '14px');
 });
 
 // END ----- DATA IMPORT\

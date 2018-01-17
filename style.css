@@ -1,3 +1,12 @@
+.tick {
+  stroke: none;
+}
+.domain {
+  stroke: none;
+}
+line {
+  stroke: none;
+}
 .d3-tip {
   line-height: 1;
   background: rgba(255, 255, 255, 0.8);
