@@ -1,7 +1,7 @@
 // **************************************************
 // MARGIN CONVENTION ********************************
 
-const margin = { top: 30, right: 10, bottom: 30, left: 10 },
+const margin = { top: 30, right: 10, bottom: 30, left: 20 },
   width = 400 - margin.left - margin.right,
   height = 3000 - margin.top - margin.bottom;
 
@@ -295,8 +295,6 @@ const expandCircle = function() {
     .attr('r', '10')
 };
 
-
-
 svg
   .selectAll('.circle')
   .data(customLevels)
@@ -363,7 +361,8 @@ svg
   let stateTicks = svg.append('g')
     .call(stateLabel)
     .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
-    .attr('text-anchor', 'start');
+    .attr('text-anchor', 'start')
+    .attr('font-size', '14px');
 
   stateTicks
     .exit()
@@ -375,8 +374,6 @@ svg
 // UPDATE SELECTION *********************************
 
   const sortState = function(data, incomeLevel) {
-
-    console.log(incomeLevel);
 
     svg.selectAll('rect').remove();
 
@@ -425,7 +422,8 @@ svg
     stateTicks = svg.append('g')
       .call(stateLabel)
       .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
-      .attr('text-anchor', 'start');
+      .attr('text-anchor', 'start')
+      .attr('font-size', '14px');
 
     stateTicks
       .exit();
