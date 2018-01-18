@@ -1,10 +1,10 @@
 // START ----- MARGIN CONVENTION
 
-const margin = { top: 30, right: 10, bottom: 30, left: 300 },
-  width = 700 - margin.left - margin.right,
+const margin = { top: 30, right: 10, bottom: 30, left: 10 },
+  width = 377 - margin.left - margin.right,
   height = 3000 - margin.top - margin.bottom;
 
-const svg = d3.select('body')
+const svg = d3.select('.container')
   .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
@@ -18,66 +18,98 @@ const svg = d3.select('body')
 const customLevels = [
   {
     label: 'less than $10,000',
+    income_index: 0,
+    income_class: 'zero',
     offset: 0
   },
   {
     label: '$10,000 to $14,999',
+    income_index: 1,
+    income_class: 'one',
     offset: 0
   },
   {
     label: '$15,000 to $19,999',
+    income_index: 2,
+    income_class: 'two',
     offset: 0
   },
   {
     label: '$20,000 to $24,999',
+    income_index: 3,
+    income_class: 'three',
     offset: 0
   },
   {
     label: '$25,000 to $29,999',
+    income_index: 4,
+    income_class: 'four',
     offset: 0
   },
   {
     label: '$30,000 to $34,999',
+    income_index: 5,
+    income_class: 'five',
     offset: 0
   },
   {
     label: '$35,000 to $39,999',
+    income_index: 6,
+    income_class: 'six',
     offset: 0
   },
   {
     label: '$40,000 to $44,999',
+    income_index: 7,
+    income_class: 'seven',
     offset: 0
   },
   {
     label: '$45,000 to $49,999',
+    income_index: 8,
+    income_class: 'eight',
     offset: 0
   },
   {
     label: '$50,000 to $59,999',
+    income_index: 9,
+    income_class: 'nine',
     offset: 0
   },
   {
     label: '$60,000 to $74,999',
+    income_index: 10,
+    income_class: 'ten',
     offset: 0
   },
   {
     label: '$75,000 to $99,999',
+    income_index: 11,
+    income_class: 'eleven',
     offset: 0
   },
   {
     label: '$100,000 to $124,999',
+    income_index: 12,
+    income_class: 'twelve',
     offset: 0
   },
   {
     label: '$125,000 to $149,999',
+    income_index: 13,
+    income_class: 'thirteen',
     offset: 0
   },
   {
     label: '$150,000 to $199,999',
+    income_index: 14,
+    income_class: 'fourteen',
     offset: 0
   },
   {
     label: '$200,000 or more',
+    income_index: 15,
+    income_class: 'fifteen',
     offset: 0
   }
 ]
@@ -115,37 +147,69 @@ d3.csv('household_income.csv', function(error, data) {
     d.percent_of_total = +d.percent_of_total; // convert percent_of_total to a Number
 
     switch(d.income_level) { // assign an index to each income_level to use for sorting
-      case 'Less than $10,000': d.income_index = 0
+      case 'Less than $10,000':
+        d.income_index = 0;
+        d.income_class = 'zero';
         break;
-      case '$10,000 to $14,999': d.income_index = 1
+      case '$10,000 to $14,999':
+        d.income_index = 1;
+        d.income_class = 'one';
         break;
-      case '$15,000 to $19,999': d.income_index = 2
+      case '$15,000 to $19,999':
+        d.income_index = 2;
+        d.income_class = 'two';
         break;
-      case '$20,000 to $24,999': d.income_index = 3
+      case '$20,000 to $24,999':
+        d.income_index = 3;
+        d.income_class = 'three';
         break;
-      case '$25,000 to $29,999': d.income_index = 4
+      case '$25,000 to $29,999':
+        d.income_index = 4;
+        d.income_class = 'four';
         break;
-      case '$30,000 to $34,999': d.income_index = 5
+      case '$30,000 to $34,999':
+        d.income_index = 5;
+        d.income_class = 'five';
         break;
-      case '$35,000 to $39,999': d.income_index = 6
+      case '$35,000 to $39,999':
+        d.income_index = 6;
+        d.income_class = 'six';
         break;
-      case '$40,000 to $44,999': d.income_index = 7
+      case '$40,000 to $44,999':
+        d.income_index = 7;
+        d.income_class = 'seven';
         break;
-      case '$45,000 to $49,999': d.income_index = 8
+      case '$45,000 to $49,999':
+        d.income_index = 8;
+        d.income_class = 'eight';
         break;
-      case '$50,000 to $59,999': d.income_index = 9
+      case '$50,000 to $59,999':
+        d.income_index = 9;
+        d.income_class = 'nine';
         break;
-      case '$60,000 to $74,999': d.income_index = 10
+      case '$60,000 to $74,999':
+        d.income_index = 10;
+        d.income_class = 'ten';
         break;
-      case '$75,000 to $99,999': d.income_index = 11
+      case '$75,000 to $99,999':
+        d.income_index = 11;
+        d.income_class = 'eleven';
         break;
-      case '$100,000 to $124,999': d.income_index = 12
+      case '$100,000 to $124,999':
+        d.income_index = 12;
+        d.income_class = 'twelve';
         break;
-      case '$125,000 to $149,999': d.income_index = 13
+      case '$125,000 to $149,999':
+        d.income_index = 13;
+        d.income_class = 'thirteen';
         break;
-      case '$150,000 to $199,999': d.income_index = 14
+      case '$150,000 to $199,999':
+        d.income_index = 14;
+        d.income_class = 'fourteen';
         break;
-      case '$200,000 or more': d.income_index = 15
+      case '$200,000 or more':
+        d.income_index = 15;
+        d.income_class = 'fifteen';
         break;
     };
 
@@ -165,7 +229,7 @@ d3.csv('household_income.csv', function(error, data) {
 
   // sort states by the "less than $10,000" income_level by default
   nested.sort(function (a, b) {
-    return b.values[0].percent_of_total - a.values[0].percent_of_total;
+    return b.values[11].percent_of_total - a.values[11].percent_of_total;
   });
 
   // create a custom offset to position each rect
@@ -215,13 +279,31 @@ d3.csv('household_income.csv', function(error, data) {
   svg.selectAll('.circle')
     .data(customLevels).enter()
     .append('circle')
-      .attr('class', 'circle')
+      .attr('class', d => d.income_class)
       .attr('cx', d => customScale(d.offset))
       .attr('cy', -10)
       .attr('r', 5)
       .style('fill', '#ccc')
-      .on('mouseover', tool_tip.show)
-      .on('mouseout', tool_tip.hide);
+    // .on('mouseover', tool_tip.show)
+      .on('mouseover', function(d) {
+        console.log(d);
+
+        d3.select(this)
+          .style('fill','#99CCE5');
+
+        d3.selectAll(`.${d.income_class}`)
+          .style('fill', '#99CCE5');
+      })
+      // .on('mouseout', tool_tip.hide)
+      .on('mouseout', function (d) {
+
+        d3.select(this)
+          .style('fill', '#CCCCCC');
+
+        d3.selectAll(`.${d.income_class}`)
+          .style('fill', '#CCCCCC');
+
+      });
 
   const gState = svg.append('g')
     .selectAll('g').data(nested)
@@ -231,9 +313,13 @@ d3.csv('household_income.csv', function(error, data) {
         return 'translate(0,' + ty + ')';
     });
     
-    gState
-      .selectAll('.bar').data(d => d.values)
-      .enter().append("rect")
+    console.log(nested);
+
+    gState.selectAll('rect')
+      .data(d => d.values)
+      .enter()
+      .append("rect")
+      .attr('class', d => d.income_class)
         .attr("x", (d, i) => xScale(d.offset))
         .attr("y", d => yScalePerState(d.percent_of_total))
         .attr("width", d => xScale(d.bar_width))
