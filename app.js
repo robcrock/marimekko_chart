@@ -2,7 +2,7 @@
 // MARGIN CONVENTION ********************************
 
 const margin = { top: 30, right: 10, bottom: 30, left: 10 },
-  width = 377 - margin.left - margin.right,
+  width = 400 - margin.left - margin.right,
   height = 3000 - margin.top - margin.bottom;
 
 const svg = d3.select('.chart')
@@ -289,6 +289,14 @@ svg.append('path')
   .attr('stroke-width', '1px')
   .attr('fill', 'none');
 
+const expandCircle = function() {
+  d3.select(this)
+    .transition()
+    .attr('r', '10')
+};
+
+
+
 svg
   .selectAll('.circle')
   .data(customLevels)
@@ -298,29 +306,18 @@ svg
     .attr('cx', d => xScale(d.offset))
     .attr('cy', -10)
     .attr('r', 5)
-    .style('fill', '#ccc')
-    // .on('mouseover', tool_tip.show)
-    // .on('mouseover', function (d) {
-    //   d3.select(this)
-    //     .style('fill', '#99CCE5');
-
-    //   d3.selectAll(`.${d.income_class}`)
-    //     .style('fill', '#99CCE5');
-    // })
-    // .on('mouseout', tool_tip.hide)
-    // .on('mouseout', function (d) {
-    //   d3.select(this)
-    //     .style('fill', '#CCCCCC');
-    //   d3.selectAll(`.${d.income_class}`)
-    //     .style('fill', '#CCCCCC');
-    // })
+    .style('fill', '#CCCCCC')
+  .on('mouseover', tool_tip.show)
     .on('click', function (d) {
 
-      // d3.select(this)
-      //   .style('fill', '#3399CC');
+      d3.selectAll('circle')
+        .attr('class', 'not-selected');
+
+      d3.select(this)
+        .attr('class', 'selected');
 
       d3.selectAll(`.${d.income_class}`)
-        .style('fill', '#3399CC');
+        .attr('class', 'selected');
 
       sortState(nested, d);
 
@@ -379,6 +376,8 @@ svg
 
   const sortState = function(data, incomeLevel) {
 
+    console.log(incomeLevel);
+
     svg.selectAll('rect').remove();
 
     stateTicks
@@ -414,12 +413,11 @@ svg
 
     incomeEnter = incomeUpdate.enter()
       .append("rect")
-      .attr('class', d => d.income_class)
+      .attr('class', d => d.income_class === incomeLevel.income_class ? 'selected' : 'not-selected')
       .attr("x", (d, i) => xScale(d.offset))
       .attr("y", d => yScalePerState(d.percent_of_total))
       .attr("width", d => xScale(d.bar_width))
-      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
-      .style("fill", '#ccc');
+      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total));
 
     incomeExit = incomeUpdate
       .exit();

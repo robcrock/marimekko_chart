@@ -1,5 +1,8 @@
-.il150000to199999 {
-  fill: #999900;
+.selected {
+  fill: #3399CC !important;
+}
+.not-selected {
+  fill: #CCCCCC;
 }
 .tick {
   stroke: none;
