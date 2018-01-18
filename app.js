@@ -1,4 +1,5 @@
-// START ----- MARGIN CONVENTION
+// **************************************************
+// MARGIN CONVENTION ********************************
 
 const margin = { top: 30, right: 10, bottom: 30, left: 10 },
   width = 377 - margin.left - margin.right,
@@ -11,31 +12,40 @@ const svg = d3.select('.chart')
   .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-// END ----- MARGIN CONVENTION
+// MARGIN CONVENTION ********************************
+// **************************************************
 
-// START ----- COMPONENTS
-
+// **************************************************
+// COMPONENTS ***************************************
 
 const xScale = d3.scaleLinear().range([0, width]).domain([0, 44]);; // scales data along xAxis
 const customAxis = d3.axisTop(xScale).ticks(16); // single scale along the top
 const xAxis = d3.axisTop(xScale); // single scale along the top
-const state = function (d) { return d.key; }; // return State name
+const state = d => d.key; // return State name
 const stateBand = d3.scaleBand().range([0, height]); // evenly distributes states
-const statePosition = function (d) { return stateBand(state(d)); }; // positions states next to their group
+const statePosition = d => stateBand(state(d)); // positions states next to their group
 const stateLabel = d3.axisLeft(stateBand); // state labels each bank
+const marimekkoChartHeight = height / 50; // 50 for 50 states
 const lineFunction = d3.line()
   .x(d => xScale(d.x))
   .y(d => xScale(d.y));
 
-// END ----- COMPONENTS
+var tool_tip = d3.tip()
+  .attr("class", "d3-tip")
+  .offset([-5, 0])
+  .html(d => d.label);
 
-// START ----- DATA IMPORT
+svg.call(tool_tip);
+
+// COMPONENTS ***************************************
+// **************************************************
 
 d3.csv('household_income.csv', function(error, data) {
 
   if (error) throw error;
 
-// STATE ----- DATA PREP
+// **************************************************
+// DATA PREP ****************************************
 
   // Create the data for our custom x-axis
   const customLevels = [
@@ -244,7 +254,7 @@ d3.csv('household_income.csv', function(error, data) {
     })
   });
 
-  // sort states by the "less than $10,000" income_level by default
+  // sort states by the by a given index
   nested.sort(function (a, b) {
     return b.values[11].percent_of_total - a.values[11].percent_of_total;
   });
@@ -267,72 +277,141 @@ d3.csv('household_income.csv', function(error, data) {
     }
   })
 
-// END ----- DATA PREP
+// DATA PREP ****************************************
+// **************************************************
 
-  var tool_tip = d3.tip()
-    .attr("class", "d3-tip")
-    .offset([-5, 0])
-    .html(d => d.label);
+// **************************************************
+// APPEND STATIC ELEMENTS ***************************
 
-  svg.call(tool_tip);
+svg.append('path')
+  .attr('d', lineFunction(lineData))
+  .attr('stroke', '#999')
+  .attr('stroke-width', '1px')
+  .attr('fill', 'none');
 
-  svg.append('path')
-    .attr('d', lineFunction(lineData))
-    .attr('stroke', '#999')
-    .attr('stroke-width', '1px')
-    .attr('fill', 'none');
-
-  svg.selectAll('.circle')
-    .data(customLevels).enter()
-    .append('circle')
+svg
+  .selectAll('.circle')
+  .data(customLevels)
+  .enter()
+  .append('circle')
     .attr('class', d => d.income_class)
     .attr('cx', d => xScale(d.offset))
     .attr('cy', -10)
     .attr('r', 5)
     .style('fill', '#ccc')
     // .on('mouseover', tool_tip.show)
-    .on('mouseover', function (d) {
+    // .on('mouseover', function (d) {
+    //   d3.select(this)
+    //     .style('fill', '#99CCE5');
 
-      d3.select(this)
-        .style('fill', '#99CCE5');
-
-      d3.selectAll(`.${d.income_class}`)
-        .style('fill', '#99CCE5');
-    })
+    //   d3.selectAll(`.${d.income_class}`)
+    //     .style('fill', '#99CCE5');
+    // })
     // .on('mouseout', tool_tip.hide)
-    .on('mouseout', function (d) {
+    // .on('mouseout', function (d) {
+    //   d3.select(this)
+    //     .style('fill', '#CCCCCC');
+    //   d3.selectAll(`.${d.income_class}`)
+    //     .style('fill', '#CCCCCC');
+    // })
+    .on('click', function (d) {
 
-      d3.select(this)
-        .style('fill', '#CCCCCC');
+      // d3.select(this)
+      //   .style('fill', '#3399CC');
 
       d3.selectAll(`.${d.income_class}`)
-        .style('fill', '#CCCCCC');
+        .style('fill', '#3399CC');
+
+      sortState(nested, d);
 
     });
 
-// START ----- Render function
+// **************************************************
+// ENTER SELECTION **********************************
 
-const render = function(nestedData) {
-
-    stateBand
-      .domain(nestedData.map(function (d) { return d.key; }));
-
-  const marimekkoChartHeight = height / stateBand.domain().length;
-
+  stateBand
+    .domain(nested.map(function (d) { return d.key; }));
 
   const yScalePerState = d3.scaleLinear()
     .domain([0, 0.1509]) // 0.1509 = max percent from this dataset
     .range([marimekkoChartHeight, 0]);
 
-    const gState = svg.append('g')
-      .selectAll('g').data(nested)
-      .enter()
-      .append('g').attr('transform', function (d) {
-        let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight / 2 + margin.top;
-        return 'translate(0,' + ty + ')';
-      });
+  let stateUpdate = svg.append('g')
+    .selectAll('g').data(nested);
+  
+  let stateEnter = stateUpdate
+    .enter()
+    .append('g').attr('transform', function (d) {
+      let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight / 2 + margin.top;
+      return 'translate(0,' + ty + ')';
+    });
 
-    gState.selectAll('rect')
+  let stateExit = stateUpdate.exit();
+
+  let incomeUpdate = stateEnter.selectAll('rect')
+    .data(d => d.values);
+
+  let incomeEnter = incomeUpdate.enter()
+    .append("rect")
+    .attr('class', d => d.income_class)
+    .attr("x", (d, i) => xScale(d.offset))
+    .attr("y", d => yScalePerState(d.percent_of_total))
+    .attr("width", d => xScale(d.bar_width))
+    .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
+    .style("fill", '#ccc');
+
+  let incomeExit = incomeUpdate
+    .exit();
+
+  let stateTicks = svg.append('g')
+    .call(stateLabel);
+
+  // Move text labels around
+  d3.selectAll('text')
+    .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
+    .attr('text-anchor', 'start');
+
+  stateTicks
+    .exit()
+
+// ENTER SELECTION **********************************
+// **************************************************
+
+// **************************************************
+// UPDATE SELECTION *********************************
+
+  const sortState = function(data, incomeLevel) {
+
+    svg.selectAll('rect').remove();
+
+    stateTicks
+      .remove();
+
+    stateExit
+      .remove();
+
+    incomeExit
+      .remove();
+
+    data.sort(function (a, b) {
+      return b.values[incomeLevel.income_index].percent_of_total - a.values[incomeLevel.income_index].percent_of_total;
+    });
+
+    stateBand
+      .domain(data.map(function (d) { return d.key; }));
+
+    stateG = svg
+      .append('g')
+      .selectAll('g')
+      .data(data)
+      .enter()
+      .append('g')
+        .attr('transform', function (d) {
+          let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight / 2 + margin.top;
+          return 'translate(0,' + ty + ')';
+        });
+
+    stateG.selectAll('rect')
       .data(d => d.values)
       .enter()
       .append("rect")
@@ -340,135 +419,22 @@ const render = function(nestedData) {
       .attr("x", (d, i) => xScale(d.offset))
       .attr("y", d => yScalePerState(d.percent_of_total))
       .attr("width", d => xScale(d.bar_width))
-      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
-      .style("fill", '#ccc');
+      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total));
 
-    svg.append('g')
+    stateTicks = svg.append('g')
       .call(stateLabel);
+
+    stateTicks
+      .exit();
 
     // Move text labels around
     d3.selectAll('text')
       .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
-      .attr('text-anchor', 'start')
-      .attr('font-family', 'Roboto')
-      .attr('font-size', '14px');
+      .attr('text-anchor', 'start');
+
   }
 
-// END ----- RENDER FUNCTION
-
-  render(nested);
+// UPDATE SELECTION *********************************
+// **************************************************
 
 });
-
-
-
-
-// END ----- DATA IMPORT
-
-// START ----- HELPER FUNCTIONS
-
-// d3.selectAll("circle").on("click", function (d) {
-    
-//     updatedData = sortByParty(nestedGeData, this.dataset.sort);
-//     update(updatedData);
-
-//   });
-
-// function sortByLevel(data, selectedLevel) {
-
-//   let sortedDataSet = [];
-
-//   sortedDataSet = data.sort((a, b) => {
-
-//     var aLevel = a.values.income_level[selectedLevel];
-//     var bLevel = b.values.income_level[selectedLevel];
-
-//     return bLevel.percent_of_total - releventLevel.percent_of_total;
-
-//   });
-
-//   return sortedDataSet;
-
-// }
-
-// function multipleUpdate(constituency) {
-//   // some duplication here that should be removed
-//   var barChart = d3.select(this);
-
-//   var x = d3.scaleBand();
-
-//   var sortedValues = constituency.values.sort((a, b) =>
-//     b.percent - a.percent
-//   );
-
-//   x.domain(sortedValues.map(d => d.party));
-
-//   x.range([0, rectGrid.nodeSize()[0] - (innerPadding / 2)])
-//     .round(0.1);
-
-//   var xAxis = d3.axisBottom()
-//     .scale(x)
-//     .tickFormat(d => d.slice(0, 2));
-
-//   y = d3.scaleLinear()
-//     .range([rectGrid.nodeSize()[1] - innerPadding, 0])
-//     .domain([0, 100]);
-
-//   var yAxis = d3.axisLeft()
-//     .scale(y)
-//     .tickFormat(formatPercent);
-
-//   barChart.select("g.x.axis")
-//     .transition().duration(500)
-//     //         .delay((d, i) => i * 20)
-//     .attr("transform", function (d) {
-//       return "translate(" + d.x + "," + (d.y + rectGrid.nodeSize()[1] - innerPadding) + ")";
-//     })
-
-//   barChart.selectAll(".bar")
-//     .data(d => d.values.map(function (a) {
-//       return {
-//         properties: {
-//           key: d.key,
-//           seat: d.seat,
-//           x: d.x,
-//           y: d.y
-//         },
-//         value: a
-//       }
-//     }))
-//     .transition().duration(500)
-//     .delay((d, i) => i * 20)
-//     .attr("transform", function (d) {
-//       return "translate(" + d.properties.x + "," + d.properties.y + ")";
-//     });
-
-//   barChart.select("text.label")
-//     .transition().duration(500)
-//     .delay((d, i) => i * 20)
-//     .attr("transform", function (d) {
-//       return "translate(" + d.x + "," + d.y + ")";
-//     });
-// }
-
-// function update(data) {
-
-//   var update = svg.selectAll("g")
-//     .data(statePosition(data), d => d.key);
-
-//   var enter = update.enter()
-//     .append("g");
-
-//   var exit = update.exit();
-
-//   // follow pattern https://bl.ocks.org/cmgiven/32d4c53f19aea6e528faf10bfe4f3da9
-//   update.each(multipleUpdate);
-
-//   enter.each(multipleEnter);
-
-//   update.merge(enter);
-
-
-// }
-
-// END ----- HELPER FUNCTIONS
