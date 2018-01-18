@@ -4,7 +4,7 @@ const margin = { top: 30, right: 10, bottom: 30, left: 10 },
   width = 377 - margin.left - margin.right,
   height = 3000 - margin.top - margin.bottom;
 
-const svg = d3.select('.container')
+const svg = d3.select('.chart')
   .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
@@ -123,6 +123,9 @@ const state = function (d) { return d.key; }; // return State name
 const stateBand = d3.scaleBand().range([0, height]); // evenly distributes states
 const statePosition = function (d) { return stateBand(state(d)); }; // positions states next to their group
 const stateLabel = d3.axisLeft(stateBand); // state labels each bank
+const lineFunction = d3.line()
+  .x(d => customScale(d.x))
+  .y(d => customScale(d.y));
 
 // END ----- COMPONENTS BEFORE DATA
 
@@ -133,6 +136,17 @@ d3.csv('household_income.csv', function(error, data) {
   if (error) throw error;
 
 // STATE ----- DATA PREP
+
+  const lineData = [
+    {
+      'x': 0,
+      'y': -1.25
+    },
+    {
+      'x': 44,
+      'y': -1.25
+    }
+  ]
 
   const householdsIn2016 = data.filter(function (d) {
     return d.year === '2016' &&
@@ -276,6 +290,12 @@ d3.csv('household_income.csv', function(error, data) {
     .html(d => d.label);
   svg.call(tool_tip);
 
+  svg.append('path')
+    .attr('d', lineFunction(lineData))
+    .attr('stroke', '#999')
+    .attr('stroke-width', '1px')
+    .attr('fill', 'none');
+
   svg.selectAll('.circle')
     .data(customLevels).enter()
     .append('circle')
@@ -286,7 +306,6 @@ d3.csv('household_income.csv', function(error, data) {
       .style('fill', '#ccc')
     // .on('mouseover', tool_tip.show)
       .on('mouseover', function(d) {
-        console.log(d);
 
         d3.select(this)
           .style('fill','#99CCE5');
