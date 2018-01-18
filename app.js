@@ -256,7 +256,7 @@ d3.csv('household_income.csv', function(error, data) {
 
   // sort states by the by a given index
   nested.sort(function (a, b) {
-    return b.values[11].percent_of_total - a.values[11].percent_of_total;
+    return b.values[0].percent_of_total - a.values[0].percent_of_total;
   });
 
   // create a custom offset to position each rect
@@ -364,10 +364,7 @@ svg
     .exit();
 
   let stateTicks = svg.append('g')
-    .call(stateLabel);
-
-  // Move text labels around
-  d3.selectAll('text')
+    .call(stateLabel)
     .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
     .attr('text-anchor', 'start');
 
@@ -400,37 +397,40 @@ svg
     stateBand
       .domain(data.map(function (d) { return d.key; }));
 
-    stateG = svg
-      .append('g')
-      .selectAll('g')
-      .data(data)
-      .enter()
-      .append('g')
-        .attr('transform', function (d) {
-          let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight / 2 + margin.top;
-          return 'translate(0,' + ty + ')';
-        });
+    stateUpdate = svg.append('g')
+      .selectAll('g').data(data);
 
-    stateG.selectAll('rect')
-      .data(d => d.values)
+    stateEnter = stateUpdate
       .enter()
+      .append('g').attr('transform', function (d) {
+        let ty = statePosition(d) - stateBand.bandwidth() + marimekkoChartHeight / 2 + margin.top;
+        return 'translate(0,' + ty + ')';
+      });
+
+    stateExit = stateUpdate.exit();
+
+    incomeUpdate = stateEnter.selectAll('rect')
+      .data(d => d.values);
+
+    incomeEnter = incomeUpdate.enter()
       .append("rect")
       .attr('class', d => d.income_class)
       .attr("x", (d, i) => xScale(d.offset))
       .attr("y", d => yScalePerState(d.percent_of_total))
       .attr("width", d => xScale(d.bar_width))
-      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total));
+      .attr("height", d => yScalePerState(0) - yScalePerState(d.percent_of_total))
+      .style("fill", '#ccc');
+
+    incomeExit = incomeUpdate
+      .exit();
 
     stateTicks = svg.append('g')
-      .call(stateLabel);
+      .call(stateLabel)
+      .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
+      .attr('text-anchor', 'start');
 
     stateTicks
       .exit();
-
-    // Move text labels around
-    d3.selectAll('text')
-      .attr('transform', `translate(10,${-stateBand.bandwidth() / 2 + 10})`)
-      .attr('text-anchor', 'start');
 
   }
 
